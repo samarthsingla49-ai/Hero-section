@@ -29,7 +29,6 @@ function GlassBubble({ background, glow, depthFactor, children }) {
         border: '1px solid rgba(255,255,255,0.2)',
       }}
     >
-      {/* Top glass highlight */}
       <div
         className="absolute top-0 left-0 right-0 h-1/2 rounded-t-full"
         style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 100%)' }}
@@ -40,9 +39,8 @@ function GlassBubble({ background, glow, depthFactor, children }) {
 }
 
 function InitialAvatar({ initials, gradient, depthFactor }) {
-  const glow = getGlowColor(gradient)
   return (
-    <GlassBubble background={gradient} glow={glow} depthFactor={depthFactor}>
+    <GlassBubble background={gradient} glow={getGlowColor(gradient)} depthFactor={depthFactor}>
       <span className="text-white font-semibold text-sm">{initials}</span>
     </GlassBubble>
   )
@@ -71,7 +69,6 @@ function IconAvatar({ icon, depthFactor }) {
       </svg>
     ),
   }
-
   return (
     <GlassBubble
       background="linear-gradient(135deg, rgba(99,102,241,0.9), rgba(139,92,246,0.9))"
@@ -83,38 +80,35 @@ function IconAvatar({ icon, depthFactor }) {
   )
 }
 
-function AvatarNode({ initials, gradient, icon, nodeIndex, zDepth, reducedMotion }) {
-  // Each avatar floats at a slightly different rhythm
-  const floatDelay = (nodeIndex * 0.65) % 3.5
-  const floatDuration = 3 + (nodeIndex * 0.4) % 1.8
-  const floatAmount = 5 + (nodeIndex % 3)
+// AvatarNode renders the bubble + idle float after assembly.
+// Scatter / assemble positioning is handled by OrbitRing's parent wrapper.
+function AvatarNode({ initials, gradient, icon, nodeIndex, zDepth, reducedMotion, phase }) {
+  const depthFactor   = zDepth > 0 ? 1 : zDepth === 0 ? 0.65 : 0.35
+  const floatDuration = 3   + (nodeIndex * 0.4)  % 1.8
+  const floatAmount   = 5   + (nodeIndex % 3)
+  const floatDelay    = 0.4 + (nodeIndex * 0.55) % 3.0
 
-  // Closer rings (high zDepth) cast stronger shadows / look more vivid
-  const depthFactor = zDepth > 0 ? 1 : zDepth === 0 ? 0.65 : 0.35
+  const isAssembled = phase === 'assembled'
 
   return (
     <motion.div
       style={{ cursor: 'pointer', transformStyle: 'preserve-3d' }}
-      animate={
-        reducedMotion
-          ? {}
-          : { y: [0, -floatAmount, 0] }
-      }
-      transition={
-        reducedMotion
-          ? {}
-          : {
-              y: { duration: floatDuration, delay: floatDelay, repeat: Infinity, ease: 'easeInOut' },
-            }
-      }
-      whileHover={{ scale: 1.22 }}
-      whileTap={{ scale: 0.95 }}
+      whileHover={isAssembled ? { scale: 1.22 } : {}}
+      whileTap={isAssembled ? { scale: 0.95 } : {}}
     >
-      {icon ? (
-        <IconAvatar icon={icon} depthFactor={depthFactor} />
-      ) : (
-        <InitialAvatar initials={initials} gradient={gradient} depthFactor={depthFactor} />
-      )}
+      {/* Float animation — only when fully assembled */}
+      <motion.div
+        animate={reducedMotion || !isAssembled ? {} : { y: [0, -floatAmount, 0] }}
+        transition={{
+          y: { duration: floatDuration, delay: floatDelay, repeat: Infinity, ease: 'easeInOut' },
+        }}
+      >
+        {icon ? (
+          <IconAvatar icon={icon} depthFactor={depthFactor} />
+        ) : (
+          <InitialAvatar initials={initials} gradient={gradient} depthFactor={depthFactor} />
+        )}
+      </motion.div>
     </motion.div>
   )
 }
