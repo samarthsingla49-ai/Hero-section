@@ -17,8 +17,12 @@ const orbitData = [
     reverse: false,
     zDepth: 90,
     ringIndex: 0,
-    // Assembly delay relative to 'assembling' phase start
     ringAssemblyDelay: 0.05,
+    nodes: [
+      { initials: 'JD', gradient: 'linear-gradient(135deg, #f59e0b, #ef4444)', angle: 0 },
+      { initials: 'SM', gradient: 'linear-gradient(135deg, #8b5cf6, #ec4899)', angle: 120 },
+      { icon: 'check', angle: 240 },
+    ],
   },
   {
     radius: 200,
@@ -27,6 +31,12 @@ const orbitData = [
     zDepth: 0,
     ringIndex: 1,
     ringAssemblyDelay: 0.15,
+    nodes: [
+      { initials: 'AK', gradient: 'linear-gradient(135deg, #06b6d4, #3b82f6)', angle: 30 },
+      { initials: 'MR', gradient: 'linear-gradient(135deg, #10b981, #06b6d4)', angle: 110 },
+      { icon: 'star', angle: 190 },
+      { initials: 'TC', gradient: 'linear-gradient(135deg, #f59e0b, #f97316)', angle: 270 },
+    ],
   },
   {
     radius: 260,
@@ -35,6 +45,12 @@ const orbitData = [
     zDepth: -90,
     ringIndex: 2,
     ringAssemblyDelay: 0.25,
+    nodes: [
+      { initials: 'LP', gradient: 'linear-gradient(135deg, #ec4899, #8b5cf6)', angle: 0 },
+      { initials: 'DN', gradient: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', angle: 90 },
+      { icon: 'message', angle: 180 },
+      { initials: 'RW', gradient: 'linear-gradient(135deg, #10b981, #3b82f6)', angle: 270 },
+    ],
   },
 ]
 
