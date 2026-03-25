@@ -1,8 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { motion, useMotionValue, useSpring } from 'framer-motion'
+import { motion, useMotionValue, useSpring, AnimatePresence } from 'framer-motion'
 import OrbitRing from './OrbitRing'
+import ShockWave from './ShockWave'
 
-// Ring entrance delays — inner ring first, outer ring last
+const SPRING = { type: 'spring', stiffness: 65, damping: 13 }
+const SCATTER_FADE = { duration: 0.5, ease: 'easeOut' }
+
+// Center sphere scatter: starts deep behind + tiny, implodes to final position
+const CENTER_SCATTER = { scale: 0.06, opacity: 0 }
+const CENTER_ASSEMBLED = { scale: 1, opacity: 1 }
+
 const orbitData = [
   {
     radius: 140,
@@ -10,7 +17,8 @@ const orbitData = [
     reverse: false,
     zDepth: 90,
     ringIndex: 0,
-    ringEntranceDelay: 0.8,
+    // Assembly delay relative to 'assembling' phase start
+    ringAssemblyDelay: 0.05,
   },
   {
     radius: 200,
@@ -18,7 +26,7 @@ const orbitData = [
     reverse: true,
     zDepth: 0,
     ringIndex: 1,
-    ringEntranceDelay: 1.05,
+    ringAssemblyDelay: 0.15,
   },
   {
     radius: 260,
@@ -26,22 +34,17 @@ const orbitData = [
     reverse: false,
     zDepth: -90,
     ringIndex: 2,
-    ringEntranceDelay: 1.3,
+    ringAssemblyDelay: 0.25,
   },
 ]
 
-// Center sphere warps in at this delay
-const CENTER_DELAY = 0.6
-
-// Easing: fast arrival with slight bounce
-const WARP_EASE = [0.16, 1, 0.3, 1]
-
-function OrbitalSystem() {
+function OrbitalSystem({ phase }) {
   const [reducedMotion, setReducedMotion] = useState(false)
   const containerRef = useRef(null)
 
+  // Scene starts flat (0deg), tilts to HUD angle (12deg) when assembled
   const mouseXMV = useMotionValue(0)
-  const mouseYMV = useMotionValue(12)
+  const mouseYMV = useMotionValue(0)
   const rotateY = useSpring(mouseXMV, { stiffness: 60, damping: 20 })
   const rotateX = useSpring(mouseYMV, { stiffness: 60, damping: 20 })
 
@@ -53,8 +56,13 @@ function OrbitalSystem() {
     return () => mq.removeEventListener('change', handler)
   }, [])
 
+  // Tilt into HUD angle when assembled
+  useEffect(() => {
+    if (phase === 'assembled') mouseYMV.set(12)
+  }, [phase])
+
   const handleMouseMove = (e) => {
-    if (!containerRef.current || reducedMotion) return
+    if (!containerRef.current || reducedMotion || phase !== 'assembled') return
     const rect = containerRef.current.getBoundingClientRect()
     const nx = (e.clientX - (rect.left + rect.width / 2)) / (rect.width / 2)
     const ny = (e.clientY - (rect.top + rect.height / 2)) / (rect.height / 2)
@@ -63,24 +71,19 @@ function OrbitalSystem() {
   }
 
   const handleMouseLeave = () => {
+    if (phase !== 'assembled') return
     mouseXMV.set(0)
     mouseYMV.set(12)
   }
 
+  const isAssembling = phase === 'assembling' || phase === 'assembled'
+  const isScattered  = phase === 'scattered'
+
   return (
-    <motion.div
+    <div
       ref={containerRef}
       className="relative flex items-center justify-center"
-      style={{
-        width: 600,
-        height: 600,
-        perspective: '1200px',
-        perspectiveOrigin: 'center center',
-      }}
-      // Entire system warps in from deep Z-space
-      initial={{ scale: 0.06, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ duration: 1.1, delay: 0.4, ease: WARP_EASE }}
+      style={{ width: 600, height: 600, perspective: '1200px', perspectiveOrigin: 'center center' }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       aria-hidden="true"
@@ -91,15 +94,16 @@ function OrbitalSystem() {
         <div className="absolute w-40 h-40 rounded-full bg-pink-500/15 blur-2xl" />
       </div>
 
-      {/* 3D scene with mouse parallax */}
+      {/* 3D scene — flat during scatter, tilts to HUD angle on assembly */}
       <motion.div
         className="relative w-full h-full flex items-center justify-center"
         style={{
           transformStyle: 'preserve-3d',
-          rotateX: reducedMotion ? 12 : rotateX,
+          rotateX: reducedMotion ? 0 : rotateX,
           rotateY: reducedMotion ? 0 : rotateY,
         }}
       >
+        {/* Orbit rings */}
         {orbitData.map((ring) => (
           <OrbitRing
             key={ring.ringIndex}
@@ -110,58 +114,42 @@ function OrbitalSystem() {
             reducedMotion={reducedMotion}
             zDepth={ring.zDepth}
             ringIndex={ring.ringIndex}
-            ringEntranceDelay={ring.ringEntranceDelay}
+            ringAssemblyDelay={ring.ringAssemblyDelay}
+            phase={phase}
           />
         ))}
 
-        {/* Center sphere — first to appear, most elevated */}
+        {/* Center sphere — first to snap into place, most elevated */}
         <motion.div
           className="relative z-10 flex flex-col items-center justify-center text-center"
           style={{ translateZ: 140, transformStyle: 'preserve-3d' }}
-          // Entrance: zoom in from zero
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.7, delay: CENTER_DELAY, ease: WARP_EASE }}
+          initial={CENTER_SCATTER}
+          animate={isAssembling ? CENTER_ASSEMBLED : { ...CENTER_SCATTER, opacity: isScattered ? 0.35 : 0 }}
+          transition={isScattered ? SCATTER_FADE : { ...SPRING, delay: 0.0 }}
         >
-          {/* Idle float — delayed until after entrance */}
+          {/* Idle float — only after fully assembled */}
           <motion.div
-            animate={reducedMotion ? {} : { y: [0, -8, 0] }}
-            transition={
-              reducedMotion
-                ? {}
-                : { duration: 4, delay: CENTER_DELAY + 0.7, repeat: Infinity, ease: 'easeInOut' }
-            }
+            animate={reducedMotion || phase !== 'assembled' ? {} : { y: [0, -8, 0] }}
+            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
           >
             {/* Pulsing halo */}
             <motion.div
               className="absolute rounded-full"
               style={{
-                width: 130,
-                height: 130,
-                top: '50%',
-                left: '50%',
-                marginLeft: -65,
-                marginTop: -65,
+                width: 130, height: 130,
+                top: '50%', left: '50%',
+                marginLeft: -65, marginTop: -65,
                 background: 'radial-gradient(circle, rgba(139,92,246,0.45) 0%, transparent 70%)',
               }}
-              animate={
-                reducedMotion
-                  ? {}
-                  : { scale: [1, 1.4, 1], opacity: [0.7, 0.15, 0.7] }
-              }
-              transition={
-                reducedMotion
-                  ? {}
-                  : { duration: 3, delay: CENTER_DELAY + 1, repeat: Infinity, ease: 'easeInOut' }
-              }
+              animate={reducedMotion || phase !== 'assembled' ? {} : { scale: [1, 1.4, 1], opacity: [0.7, 0.15, 0.7] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
             />
 
             {/* Glass sphere */}
             <div
               className="w-24 h-24 rounded-full flex flex-col items-center justify-center relative overflow-hidden"
               style={{
-                background:
-                  'linear-gradient(135deg, rgba(139,92,246,0.85), rgba(236,72,153,0.85))',
+                background: 'linear-gradient(135deg, rgba(139,92,246,0.85), rgba(236,72,153,0.85))',
                 backdropFilter: 'blur(12px)',
                 WebkitBackdropFilter: 'blur(12px)',
                 boxShadow:
@@ -171,18 +159,20 @@ function OrbitalSystem() {
             >
               <div
                 className="absolute top-0 left-0 right-0 h-1/2 rounded-t-full"
-                style={{
-                  background:
-                    'linear-gradient(180deg, rgba(255,255,255,0.18) 0%, transparent 100%)',
-                }}
+                style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.18) 0%, transparent 100%)' }}
               />
               <span className="text-white font-bold text-xl leading-none relative z-10">20k+</span>
               <span className="text-white/80 text-xs mt-1 relative z-10">Specialists</span>
             </div>
           </motion.div>
         </motion.div>
+
+        {/* Shockwave rings — fire the moment everything snaps in */}
+        <AnimatePresence>
+          {phase === 'assembled' && <ShockWave key="shockwave" />}
+        </AnimatePresence>
       </motion.div>
-    </motion.div>
+    </div>
   )
 }
 

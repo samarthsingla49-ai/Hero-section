@@ -1,8 +1,6 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 
-const WARP_EASE = [0.34, 1.56, 0.64, 1] // bouncy spring feel for avatar pop-in
-
 function getGlowColor(gradient) {
   if (!gradient) return 'rgba(139,92,246,0.65)'
   if (gradient.includes('f59e0b')) return 'rgba(245,158,11,0.65)'
@@ -82,41 +80,28 @@ function IconAvatar({ icon, depthFactor }) {
   )
 }
 
-function AvatarNode({ initials, gradient, icon, nodeIndex, zDepth, reducedMotion, entranceDelay }) {
-  const floatDelay = entranceDelay + 0.5 + (nodeIndex * 0.65) % 3.5
-  const floatDuration = 3 + (nodeIndex * 0.4) % 1.8
-  const floatAmount = 5 + (nodeIndex % 3)
-  const depthFactor = zDepth > 0 ? 1 : zDepth === 0 ? 0.65 : 0.35
+// AvatarNode renders the bubble + idle float after assembly.
+// Scatter / assemble positioning is handled by OrbitRing's parent wrapper.
+function AvatarNode({ initials, gradient, icon, nodeIndex, zDepth, reducedMotion, phase }) {
+  const depthFactor   = zDepth > 0 ? 1 : zDepth === 0 ? 0.65 : 0.35
+  const floatDuration = 3   + (nodeIndex * 0.4)  % 1.8
+  const floatAmount   = 5   + (nodeIndex % 3)
+  const floatDelay    = 0.4 + (nodeIndex * 0.55) % 3.0
+
+  const isAssembled = phase === 'assembled'
 
   return (
-    // Outer wrapper: entrance pop-in from zero scale
     <motion.div
       style={{ cursor: 'pointer', transformStyle: 'preserve-3d' }}
-      initial={{ scale: 0, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{
-        duration: 0.5,
-        delay: reducedMotion ? 0 : entranceDelay,
-        ease: WARP_EASE,
-      }}
-      whileHover={{ scale: 1.22 }}
-      whileTap={{ scale: 0.95 }}
+      whileHover={isAssembled ? { scale: 1.22 } : {}}
+      whileTap={isAssembled ? { scale: 0.95 } : {}}
     >
-      {/* Inner wrapper: idle float animation, starts after entrance */}
+      {/* Float animation — only when fully assembled */}
       <motion.div
-        animate={reducedMotion ? {} : { y: [0, -floatAmount, 0] }}
-        transition={
-          reducedMotion
-            ? {}
-            : {
-                y: {
-                  duration: floatDuration,
-                  delay: floatDelay,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
-                },
-              }
-        }
+        animate={reducedMotion || !isAssembled ? {} : { y: [0, -floatAmount, 0] }}
+        transition={{
+          y: { duration: floatDuration, delay: floatDelay, repeat: Infinity, ease: 'easeInOut' },
+        }}
       >
         {icon ? (
           <IconAvatar icon={icon} depthFactor={depthFactor} />
