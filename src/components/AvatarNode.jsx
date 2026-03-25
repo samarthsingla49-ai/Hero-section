@@ -1,18 +1,54 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 
-function InitialAvatar({ initials, gradient }) {
+function getGlowColor(gradient) {
+  if (!gradient) return 'rgba(139,92,246,0.65)'
+  if (gradient.includes('f59e0b')) return 'rgba(245,158,11,0.65)'
+  if (gradient.includes('ef4444')) return 'rgba(239,68,68,0.65)'
+  if (gradient.includes('8b5cf6')) return 'rgba(139,92,246,0.65)'
+  if (gradient.includes('ec4899')) return 'rgba(236,72,153,0.65)'
+  if (gradient.includes('06b6d4')) return 'rgba(6,182,212,0.65)'
+  if (gradient.includes('10b981')) return 'rgba(16,185,129,0.65)'
+  if (gradient.includes('3b82f6')) return 'rgba(59,130,246,0.65)'
+  return 'rgba(139,92,246,0.65)'
+}
+
+function GlassBubble({ background, glow, depthFactor, children }) {
   return (
     <div
-      className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-lg"
-      style={{ background: gradient }}
+      className="w-12 h-12 rounded-full flex items-center justify-center relative overflow-hidden"
+      style={{
+        background,
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        boxShadow: [
+          `0 ${Math.round(4 * depthFactor)}px ${Math.round(18 * depthFactor)}px ${glow}`,
+          `0 ${Math.round(2 * depthFactor)}px ${Math.round(8 * depthFactor)}px rgba(0,0,0,0.35)`,
+          'inset 0 1px 0 rgba(255,255,255,0.28)',
+        ].join(', '),
+        border: '1px solid rgba(255,255,255,0.2)',
+      }}
     >
-      {initials}
+      {/* Top glass highlight */}
+      <div
+        className="absolute top-0 left-0 right-0 h-1/2 rounded-t-full"
+        style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 100%)' }}
+      />
+      <span className="relative z-10 flex items-center justify-center">{children}</span>
     </div>
   )
 }
 
-function IconAvatar({ icon }) {
+function InitialAvatar({ initials, gradient, depthFactor }) {
+  const glow = getGlowColor(gradient)
+  return (
+    <GlassBubble background={gradient} glow={glow} depthFactor={depthFactor}>
+      <span className="text-white font-semibold text-sm">{initials}</span>
+    </GlassBubble>
+  )
+}
+
+function IconAvatar({ icon, depthFactor }) {
   const icons = {
     check: (
       <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -37,39 +73,49 @@ function IconAvatar({ icon }) {
   }
 
   return (
-    <div
-      className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg"
-      style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
+    <GlassBubble
+      background="linear-gradient(135deg, rgba(99,102,241,0.9), rgba(139,92,246,0.9))"
+      glow="rgba(139,92,246,0.65)"
+      depthFactor={depthFactor}
     >
       {icons[icon] || icons.star}
-    </div>
+    </GlassBubble>
   )
 }
 
-function AvatarNode({ initials, gradient, icon, angle }) {
+function AvatarNode({ initials, gradient, icon, nodeIndex, zDepth, reducedMotion }) {
+  // Each avatar floats at a slightly different rhythm
+  const floatDelay = (nodeIndex * 0.65) % 3.5
+  const floatDuration = 3 + (nodeIndex * 0.4) % 1.8
+  const floatAmount = 5 + (nodeIndex % 3)
+
+  // Closer rings (high zDepth) cast stronger shadows / look more vivid
+  const depthFactor = zDepth > 0 ? 1 : zDepth === 0 ? 0.65 : 0.35
+
   return (
-    <div
-      className="absolute"
-      style={{
-        transform: `rotate(${angle}deg) translateX(0)`,
-        left: '50%',
-        top: '50%',
-        marginLeft: '-24px',
-        marginTop: '-24px',
-      }}
+    <motion.div
+      style={{ cursor: 'pointer', transformStyle: 'preserve-3d' }}
+      animate={
+        reducedMotion
+          ? {}
+          : { y: [0, -floatAmount, 0] }
+      }
+      transition={
+        reducedMotion
+          ? {}
+          : {
+              y: { duration: floatDuration, delay: floatDelay, repeat: Infinity, ease: 'easeInOut' },
+            }
+      }
+      whileHover={{ scale: 1.22 }}
+      whileTap={{ scale: 0.95 }}
     >
-      <motion.div
-        style={{ transform: `rotate(-${angle}deg)` }}
-        whileHover={{ scale: 1.15 }}
-        transition={{ type: 'spring', stiffness: 300 }}
-      >
-        {icon ? (
-          <IconAvatar icon={icon} />
-        ) : (
-          <InitialAvatar initials={initials} gradient={gradient} />
-        )}
-      </motion.div>
-    </div>
+      {icon ? (
+        <IconAvatar icon={icon} depthFactor={depthFactor} />
+      ) : (
+        <InitialAvatar initials={initials} gradient={gradient} depthFactor={depthFactor} />
+      )}
+    </motion.div>
   )
 }
 
