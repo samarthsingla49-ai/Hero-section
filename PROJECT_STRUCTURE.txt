@@ -1,0 +1,118 @@
+animated-site-template-2/
+│
+├── 📄 Configuration Files
+│   ├── package.json                    # Dependencies & scripts
+│   ├── vite.config.js                  # Vite configuration
+│   ├── tailwind.config.js              # Tailwind + brand colors
+│   ├── postcss.config.js               # PostCSS setup
+│   ├── .gitignore                      # Git ignore rules
+│   └── index.html                      # HTML entry point
+│
+├── 📚 Documentation
+│   ├── README.md                       # Complete user guide
+│   ├── SETUP.md                        # Installation & troubleshooting
+│   ├── PROJECT_SUMMARY.md              # Quick overview
+│   ├── IMPLEMENTATION_NOTES.md         # Technical deep dive
+│   ├── COMPONENT_HIERARCHY.md          # Component structure
+│   └── PROJECT_STRUCTURE.txt           # This file
+│
+└── 📁 src/
+    │
+    ├── 🎯 Entry Points
+    │   ├── main.jsx                    # React entry (imports App)
+    │   ├── App.jsx                     # Root component (imports Hero)
+    │   └── index.css                   # Global styles + Tailwind
+    │
+    └── 📁 components/
+        │
+        ├── Hero.jsx                    # Main hero section
+        │   ├── Full-screen layout
+        │   ├── Gradient background
+        │   ├── Left: Text content
+        │   ├── Right: Orbital animation
+        │   └── Imports: Navigation, OrbitalSystem
+        │
+        ├── Navigation.jsx              # Top navigation bar
+        │   ├── Logo component (SVG)
+        │   ├── Menu items
+        │   ├── CTA buttons
+        │   └── Entrance animations
+        │
+        ├── OrbitalSystem.jsx           # Orbital animation container
+        │   ├── Manages 3 rings
+        │   ├── Center text ("20k+ Specialists")
+        │   ├── Reduced motion detection
+        │   ├── orbitData configuration
+        │   └── Imports: OrbitRing
+        │
+        ├── OrbitRing.jsx               # Single rotating ring
+        │   ├── Infinite rotation animation
+        │   ├── Configurable radius/speed
+        │   ├── Positions child nodes
+        │   └── Imports: AvatarNode
+        │
+        └── AvatarNode.jsx              # Avatar/icon component
+            ├── Counter-rotation logic
+            ├── InitialAvatar variant (JD, SM, etc.)
+            ├── IconAvatar variant (checkmark, star, message)
+            └── Hover animations
+
+
+📊 Component Imports Flow:
+────────────────────────────
+main.jsx
+ └─> App.jsx
+      └─> Hero.jsx
+           ├─> Navigation.jsx
+           └─> OrbitalSystem.jsx
+                └─> OrbitRing.jsx
+                     └─> AvatarNode.jsx
+
+
+🎨 Styling Stack:
+─────────────────
+1. index.css (Tailwind directives + global styles)
+2. tailwind.config.js (Brand colors, custom animations)
+3. Component classes (Tailwind utilities)
+4. Inline styles (Dynamic positioning/rotation)
+5. Framer Motion (Animations)
+
+
+🔧 Key Files to Modify:
+───────────────────────
+Priority 1 (Content):
+  ├── Hero.jsx                  # Update headline, CTA text
+  ├── Navigation.jsx            # Replace logo, nav links
+  └── OrbitalSystem.jsx         # Change specialist count, avatar data
+
+Priority 2 (Branding):
+  ├── tailwind.config.js        # Update brand colors
+  └── Hero.jsx                  # Adjust gradient colors
+
+Priority 3 (Enhancement):
+  ├── AvatarNode.jsx            # Add image support
+  └── OrbitalSystem.jsx         # Add more rings/nodes
+
+
+📦 Build Output (npm run build):
+────────────────────────────────
+dist/
+├── index.html
+└── assets/
+    ├── index-[hash].js         # Bundled & minified React app
+    └── index-[hash].css        # Purged Tailwind CSS
+
+
+🚀 Quick Start:
+───────────────
+1. npm install
+2. npm run dev
+3. Open http://localhost:5173
+
+
+📖 Read First:
+──────────────
+1. SETUP.md                     # Get it running
+2. README.md                    # Understand everything
+3. PROJECT_SUMMARY.md           # Quick reference
+4. IMPLEMENTATION_NOTES.md      # Deep dive when needed
