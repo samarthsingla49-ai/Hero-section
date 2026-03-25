@@ -1,6 +1,8 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 
+const WARP_EASE = [0.34, 1.56, 0.64, 1] // bouncy spring feel for avatar pop-in
+
 function getGlowColor(gradient) {
   if (!gradient) return 'rgba(139,92,246,0.65)'
   if (gradient.includes('f59e0b')) return 'rgba(245,158,11,0.65)'
@@ -29,7 +31,6 @@ function GlassBubble({ background, glow, depthFactor, children }) {
         border: '1px solid rgba(255,255,255,0.2)',
       }}
     >
-      {/* Top glass highlight */}
       <div
         className="absolute top-0 left-0 right-0 h-1/2 rounded-t-full"
         style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 100%)' }}
@@ -40,9 +41,8 @@ function GlassBubble({ background, glow, depthFactor, children }) {
 }
 
 function InitialAvatar({ initials, gradient, depthFactor }) {
-  const glow = getGlowColor(gradient)
   return (
-    <GlassBubble background={gradient} glow={glow} depthFactor={depthFactor}>
+    <GlassBubble background={gradient} glow={getGlowColor(gradient)} depthFactor={depthFactor}>
       <span className="text-white font-semibold text-sm">{initials}</span>
     </GlassBubble>
   )
@@ -71,7 +71,6 @@ function IconAvatar({ icon, depthFactor }) {
       </svg>
     ),
   }
-
   return (
     <GlassBubble
       background="linear-gradient(135deg, rgba(99,102,241,0.9), rgba(139,92,246,0.9))"
@@ -83,38 +82,48 @@ function IconAvatar({ icon, depthFactor }) {
   )
 }
 
-function AvatarNode({ initials, gradient, icon, nodeIndex, zDepth, reducedMotion }) {
-  // Each avatar floats at a slightly different rhythm
-  const floatDelay = (nodeIndex * 0.65) % 3.5
+function AvatarNode({ initials, gradient, icon, nodeIndex, zDepth, reducedMotion, entranceDelay }) {
+  const floatDelay = entranceDelay + 0.5 + (nodeIndex * 0.65) % 3.5
   const floatDuration = 3 + (nodeIndex * 0.4) % 1.8
   const floatAmount = 5 + (nodeIndex % 3)
-
-  // Closer rings (high zDepth) cast stronger shadows / look more vivid
   const depthFactor = zDepth > 0 ? 1 : zDepth === 0 ? 0.65 : 0.35
 
   return (
+    // Outer wrapper: entrance pop-in from zero scale
     <motion.div
       style={{ cursor: 'pointer', transformStyle: 'preserve-3d' }}
-      animate={
-        reducedMotion
-          ? {}
-          : { y: [0, -floatAmount, 0] }
-      }
-      transition={
-        reducedMotion
-          ? {}
-          : {
-              y: { duration: floatDuration, delay: floatDelay, repeat: Infinity, ease: 'easeInOut' },
-            }
-      }
+      initial={{ scale: 0, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{
+        duration: 0.5,
+        delay: reducedMotion ? 0 : entranceDelay,
+        ease: WARP_EASE,
+      }}
       whileHover={{ scale: 1.22 }}
       whileTap={{ scale: 0.95 }}
     >
-      {icon ? (
-        <IconAvatar icon={icon} depthFactor={depthFactor} />
-      ) : (
-        <InitialAvatar initials={initials} gradient={gradient} depthFactor={depthFactor} />
-      )}
+      {/* Inner wrapper: idle float animation, starts after entrance */}
+      <motion.div
+        animate={reducedMotion ? {} : { y: [0, -floatAmount, 0] }}
+        transition={
+          reducedMotion
+            ? {}
+            : {
+                y: {
+                  duration: floatDuration,
+                  delay: floatDelay,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                },
+              }
+        }
+      >
+        {icon ? (
+          <IconAvatar icon={icon} depthFactor={depthFactor} />
+        ) : (
+          <InitialAvatar initials={initials} gradient={gradient} depthFactor={depthFactor} />
+        )}
+      </motion.div>
     </motion.div>
   )
 }
